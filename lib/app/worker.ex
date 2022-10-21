@@ -1,5 +1,6 @@
 defmodule App.Worker do
-  use GenServer, restart: :temporary
+  use GenServer, restart: :transient
+  require Logger
 
   @moduledoc """
   This is the worker process, in this case, it simply posts on a
@@ -11,7 +12,8 @@ defmodule App.Worker do
   end
 
   def init(name) do
-    {:ok, {name, 1000 + :rand.uniform(4000)}, 0}
+    Process.send_after(self(), :tick, 1000)
+    {:ok, {name, 0}}
   end
 
   # called when a handoff has been initiated due to changes
@@ -21,8 +23,8 @@ defmodule App.Worker do
   #   - `{:resume, state}`, to hand off some state to the new process
   #   - `:ignore`, to leave the process running on its current node
   #
-  def handle_call({:swarm, :begin_handoff}, _from, {name, delay}) do
-    {:reply, {:resume, delay}, {name, delay}}
+  def handle_call({:swarm, :begin_handoff}, _from, {name, count}) do
+    {:reply, {:resume, count}, {name, count}}
   end
 
   # called after the process has been restarted on its new node,
@@ -31,8 +33,8 @@ defmodule App.Worker do
   # **NOTE**: This is called *after* the process is successfully started,
   # so make sure to design your processes around this caveat if you
   # wish to hand off state like this.
-  def handle_cast({:swarm, :end_handoff, delay}, {name, _}) do
-    {:noreply, {name, delay}}
+  def handle_cast({:swarm, :end_handoff, count}, {name, _}) do
+    {:noreply, {name, count}}
   end
 
   # called when a network split is healed and the local process
@@ -40,14 +42,16 @@ defmodule App.Worker do
   # side of the split is handing off its state to us. You can choose
   # to ignore the handoff state, or apply your own conflict resolution
   # strategy
-  def handle_cast({:swarm, :resolve_conflict, _delay}, state) do
+  def handle_cast({:swarm, :resolve_conflict, _count}, state) do
     {:noreply, state}
   end
 
-  def handle_info(:timeout, {name, delay}) do
-    IO.puts("#{inspect(name)} says hi!")
-    Process.send_after(self(), :timeout, delay)
-    {:noreply, {name, delay}}
+  def handle_info(:tick, {name, count}) do
+    count = count + 1
+    Logger.info("#{name} (#{inspect(self())}): #{count}")
+
+    Process.send_after(self(), :tick, 1000)
+    {:noreply, {name, count}}
   end
 
   # this message is sent when this process should die
