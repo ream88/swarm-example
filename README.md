@@ -1,21 +1,13 @@
-# App
+# A Elixir cluster example using swarm
 
-**TODO: Add description**
+This is an example of an Elixir app which allows rolling deploys using [`swarm`](https://hex.pm/packages/swarm).
 
-## Installation
-
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `app` to your list of dependencies in `mix.exs`:
-
-```elixir
-def deps do
-  [
-    {:app, "~> 0.1.0"}
-  ]
-end
+```sh
+iex --name a -S mix
+iex --name b -S mix
 ```
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at <https://hexdocs.pm/app>.
-
+```sh
+App.start_worker(:alice)
+App.start_worker(:bob) # On node b
+```
