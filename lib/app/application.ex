@@ -10,7 +10,8 @@ defmodule App.Application do
     topologies = Application.get_env(:libcluster, :topologies)
 
     children = [
-      {Cluster.Supervisor, [topologies, [name: App.ClusterSupervisor]]}
+      {Cluster.Supervisor, [topologies, [name: App.ClusterSupervisor]]},
+      App.WorkerSupervisor
       # ..other children..
     ]
 
